@@ -1,11 +1,13 @@
 import { z } from "zod";
 
+import { optionalNumber } from "@/lib/validations/helpers";
+
 export const gradeSchema = z
   .object({
     name: z.string().trim().min(1, "El nombre es obligatorio."),
     description: z.string().trim().optional(),
-    suggestedMinAge: z.coerce.number().int().min(0).optional(),
-    suggestedMaxAge: z.coerce.number().int().min(0).optional(),
+    suggestedMinAge: optionalNumber(z.coerce.number().int().min(0)),
+    suggestedMaxAge: optionalNumber(z.coerce.number().int().min(0)),
     baseMonthlyFee: z.coerce.number().min(0, "La mensualidad no puede ser negativa."),
   })
   .refine(
