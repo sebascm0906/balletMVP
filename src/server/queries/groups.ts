@@ -20,14 +20,13 @@ type GroupRow = {
   classroom: string | null;
   capacity: number;
   status: "active" | "inactive";
-  grades: { name: string } | null;
 };
 
 export async function getGroups(): Promise<GroupListItem[]> {
   const { supabase } = await requireProfile();
   const { data, error } = await supabase
     .from("groups")
-    .select("id, grade_id, name, teacher_name, classroom, capacity, status, grades(name)")
+    .select("id, grade_id, name, teacher_name, classroom, capacity, status")
     .order("name", { ascending: true });
 
   if (error) {
@@ -35,23 +34,30 @@ export async function getGroups(): Promise<GroupListItem[]> {
   }
 
   const groups = (data ?? []) as unknown as GroupRow[];
-  const { data: enrollments, error: enrollmentError } = await supabase
-    .from("student_enrollments")
-    .select("group_id")
-    .eq("status", "active");
+  const [gradesResult, enrollmentsResult] = await Promise.all([
+    supabase.from("grades").select("id, name"),
+    supabase.from("student_enrollments").select("group_id").eq("status", "active"),
+  ]);
 
-  if (enrollmentError) {
-    throw new Error(enrollmentError.message);
+  if (gradesResult.error) {
+    throw new Error(gradesResult.error.message);
   }
 
+  if (enrollmentsResult.error) {
+    throw new Error(enrollmentsResult.error.message);
+  }
+
+  const gradeNames = new Map(
+    (gradesResult.data ?? []).map((grade) => [grade.id, grade.name]),
+  );
   const counts = new Map<string, number>();
-  for (const enrollment of enrollments ?? []) {
+  for (const enrollment of enrollmentsResult.data ?? []) {
     counts.set(enrollment.group_id, (counts.get(enrollment.group_id) ?? 0) + 1);
   }
 
   return groups.map((group) => ({
     ...group,
-    grade_name: group.grades?.name ?? "Sin grado",
+    grade_name: gradeNames.get(group.grade_id) ?? "Sin grado",
     active_enrollments: counts.get(group.id) ?? 0,
   }));
 }

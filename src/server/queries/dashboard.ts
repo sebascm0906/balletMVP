@@ -3,14 +3,9 @@ import { requireProfile } from "@/server/queries/auth";
 
 type ClassTodayRow = {
   id: string;
+  group_id: string;
   starts_at: string;
   ends_at: string;
-  groups: {
-    name: string;
-    teacher_name: string | null;
-    classroom: string | null;
-    grades: { name: string } | null;
-  } | null;
 };
 
 export async function getDashboardSummary() {
@@ -39,7 +34,7 @@ export async function getDashboardSummary() {
         .lt("paid_at", startOfNextMonth),
       supabase
         .from("group_schedules")
-        .select("id, starts_at, ends_at, groups(name, teacher_name, classroom, grades(name))")
+        .select("id, group_id, starts_at, ends_at")
         .eq("weekday", weekday)
         .eq("status", "active")
         .order("starts_at", { ascending: true }),
@@ -63,21 +58,59 @@ export async function getDashboardSummary() {
     charges: chargesResult.data ?? [],
     payments: paymentsResult.data ?? [],
   });
+  const classRows = (classesResult.data ?? []) as unknown as ClassTodayRow[];
+  const classGroupIds = [...new Set(classRows.map((classItem) => classItem.group_id))];
+  const { data: classGroups, error: classGroupsError } = classGroupIds.length
+    ? await supabase
+        .from("groups")
+        .select("id, grade_id, name, teacher_name, classroom")
+        .in("id", classGroupIds)
+    : { data: [], error: null };
+
+  if (classGroupsError) {
+    throw new Error(classGroupsError.message);
+  }
+
+  const classGradeIds = [...new Set((classGroups ?? []).map((group) => group.grade_id))];
+  const { data: classGrades, error: classGradesError } = classGradeIds.length
+    ? await supabase.from("grades").select("id, name").in("id", classGradeIds)
+    : { data: [], error: null };
+
+  if (classGradesError) {
+    throw new Error(classGradesError.message);
+  }
+
+  const classGradeNames = new Map(
+    (classGrades ?? []).map((grade) => [grade.id, grade.name]),
+  );
+  const classGroupLookup = new Map(
+    (classGroups ?? []).map((group) => [
+      group.id,
+      {
+        name: group.name,
+        teacherName: group.teacher_name,
+        classroom: group.classroom,
+        gradeName: classGradeNames.get(group.grade_id) ?? "Grado",
+      },
+    ]),
+  );
 
   return {
     metrics,
     month,
     year,
-    classesToday: ((classesResult.data ?? []) as unknown as ClassTodayRow[]).map(
-      (classItem) => ({
+    classesToday: classRows.map((classItem) => {
+      const group = classGroupLookup.get(classItem.group_id);
+
+      return {
         id: classItem.id,
         startsAt: classItem.starts_at,
         endsAt: classItem.ends_at,
-        groupName: classItem.groups?.name ?? "Grupo",
-        gradeName: classItem.groups?.grades?.name ?? "Grado",
-        teacherName: classItem.groups?.teacher_name ?? "Sin maestra",
-        classroom: classItem.groups?.classroom ?? "Sin salón",
-      }),
-    ),
+        groupName: group?.name ?? "Grupo",
+        gradeName: group?.gradeName ?? "Grado",
+        teacherName: group?.teacherName ?? "Sin maestra",
+        classroom: group?.classroom ?? "Sin salón",
+      };
+    }),
   };
 }
