@@ -1,5 +1,6 @@
-import { ScheduleForm, getWeekdayLabel } from "@/components/forms/schedule-form";
+import { ScheduleForm } from "@/components/forms/schedule-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { getWeekdayLabel } from "@/lib/weekdays";
 import { updateGroupScheduleStatusAction } from "@/server/actions/schedules";
 import { getGroups } from "@/server/queries/groups";
 import { getSchedules } from "@/server/queries/schedules";

@@ -6,19 +6,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { scheduleSchema } from "@/lib/validations/schedule";
+import { weekdays } from "@/lib/weekdays";
 import { createGroupScheduleAction } from "@/server/actions/schedules";
 import type { ActionState } from "@/server/actions/types";
 import type { GroupListItem } from "@/server/queries/groups";
-
-const weekdays = [
-  { value: 0, label: "Domingo" },
-  { value: 1, label: "Lunes" },
-  { value: 2, label: "Martes" },
-  { value: 3, label: "Miércoles" },
-  { value: 4, label: "Jueves" },
-  { value: 5, label: "Viernes" },
-  { value: 6, label: "Sábado" },
-];
 
 const initialState: ActionState = {};
 
@@ -98,8 +89,4 @@ export function ScheduleForm({ groups }: { groups: GroupListItem[] }) {
       </div>
     </form>
   );
-}
-
-export function getWeekdayLabel(weekday: number) {
-  return weekdays.find((item) => item.value === weekday)?.label ?? "Día inválido";
 }
