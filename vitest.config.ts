@@ -2,6 +2,9 @@ import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  test: {
+    exclude: ["node_modules/**", ".next/**", ".worktrees/**", "dist/**", "out/**"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
