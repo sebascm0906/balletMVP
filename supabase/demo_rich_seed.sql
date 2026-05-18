@@ -86,20 +86,31 @@ begin
       and existing.starts_at = data.starts_at::time
   );
 
-  insert into public.students (folio, full_name, birth_date, phone, status, joined_at, medical_notes, general_notes)
+  insert into public.students (
+    folio,
+    full_name,
+    birth_date,
+    phone,
+    status,
+    joined_at,
+    left_at,
+    left_reason,
+    medical_notes,
+    general_notes
+  )
   values
-    ('ALU-9001', 'Ana Paula Torres', '2019-04-12', null, 'active', current_date - interval '120 days', 'Alergia leve al polvo.', 'Pago por transferencia.'),
-    ('ALU-9002', 'Sofia Hernandez', '2017-09-22', null, 'active', current_date - interval '110 days', null, 'Requiere recibo impreso.'),
-    ('ALU-9003', 'Camila Robles', '2016-02-03', null, 'active', current_date - interval '95 days', null, null),
-    ('ALU-9004', 'Valentina Cruz', '2018-11-18', null, 'active', current_date - interval '90 days', null, 'Descuento familiar.'),
-    ('ALU-9005', 'Regina Lopez', '2020-01-14', null, 'active', current_date - interval '80 days', null, null),
-    ('ALU-9006', 'Mariana Diaz', '2015-06-01', null, 'active', current_date - interval '70 days', 'Asma controlada.', null),
-    ('ALU-9007', 'Lucia Martinez', '2014-08-28', null, 'active', current_date - interval '65 days', null, null),
-    ('ALU-9008', 'Elena Sanchez', '2012-12-09', null, 'active', current_date - interval '55 days', null, 'Beca parcial.'),
-    ('ALU-9009', 'Natalia Gomez', '2013-05-17', null, 'active', current_date - interval '50 days', null, null),
-    ('ALU-9010', 'Isabella Vargas', '2011-03-20', null, 'active', current_date - interval '45 days', null, null),
-    ('ALU-9011', 'Renata Flores', '2010-10-05', null, 'active', current_date - interval '40 days', null, 'Pago puntual.'),
-    ('ALU-9012', 'Daniela Ruiz', '2016-07-11', null, 'inactive', current_date - interval '180 days', null, 'Baja demo por cambio de ciudad.')
+    ('ALU-9001', 'Ana Paula Torres', '2019-04-12', null, 'active', current_date - interval '120 days', null, null, 'Alergia leve al polvo.', 'Pago por transferencia.'),
+    ('ALU-9002', 'Sofia Hernandez', '2017-09-22', null, 'active', current_date - interval '110 days', null, null, null, 'Requiere recibo impreso.'),
+    ('ALU-9003', 'Camila Robles', '2016-02-03', null, 'active', current_date - interval '95 days', null, null, null, null),
+    ('ALU-9004', 'Valentina Cruz', '2018-11-18', null, 'active', current_date - interval '90 days', null, null, null, 'Descuento familiar.'),
+    ('ALU-9005', 'Regina Lopez', '2020-01-14', null, 'active', current_date - interval '80 days', null, null, null, null),
+    ('ALU-9006', 'Mariana Diaz', '2015-06-01', null, 'active', current_date - interval '70 days', null, null, 'Asma controlada.', null),
+    ('ALU-9007', 'Lucia Martinez', '2014-08-28', null, 'active', current_date - interval '65 days', null, null, null, null),
+    ('ALU-9008', 'Elena Sanchez', '2012-12-09', null, 'active', current_date - interval '55 days', null, null, null, 'Beca parcial.'),
+    ('ALU-9009', 'Natalia Gomez', '2013-05-17', null, 'active', current_date - interval '50 days', null, null, null, null),
+    ('ALU-9010', 'Isabella Vargas', '2011-03-20', null, 'active', current_date - interval '45 days', null, null, null, null),
+    ('ALU-9011', 'Renata Flores', '2010-10-05', null, 'active', current_date - interval '40 days', null, null, null, 'Pago puntual.'),
+    ('ALU-9012', 'Daniela Ruiz', '2016-07-11', null, 'inactive', current_date - interval '180 days', (current_date - interval '10 days')::date, 'Cambio de ciudad', null, 'Baja demo por cambio de ciudad.')
   on conflict (folio) do update set
     full_name = excluded.full_name,
     birth_date = excluded.birth_date,
@@ -107,8 +118,8 @@ begin
     joined_at = excluded.joined_at,
     medical_notes = excluded.medical_notes,
     general_notes = excluded.general_notes,
-    left_at = case when excluded.status = 'inactive' then current_date - interval '10 days' else null end,
-    left_reason = case when excluded.status = 'inactive' then 'Cambio de ciudad' else null end;
+    left_at = excluded.left_at,
+    left_reason = excluded.left_reason;
 
   insert into public.guardians (full_name, phone, email, address)
   select data.full_name, data.phone, data.email, data.address
